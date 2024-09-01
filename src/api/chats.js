@@ -137,16 +137,12 @@ chatsAPI.post = async (caller, data) => {
 };
 
 chatsAPI.update = async (caller, data) => {
-	if (!data || !data.roomId) {
-		throw new Error('[[error:invalid-data]]');
-	}
+	validateData(data);
 
 	if (data.hasOwnProperty('name')) {
-		if (!data.name && data.name !== '') {
-			throw new Error('[[error:invalid-data]]');
-		}
-		await messaging.renameRoom(caller.uid, data.roomId, data.name);
+		await updateRoomName(caller, data);
 	}
+
 	const [roomData, isAdmin] = await Promise.all([
 		messaging.getRoomData(data.roomId),
 		user.isAdministrator(caller.uid),
@@ -155,9 +151,7 @@ chatsAPI.update = async (caller, data) => {
 		throw new Error('[[error:invalid-data]]');
 	}
 	if (data.hasOwnProperty('groups')) {
-		if (roomData.public && isAdmin) {
-			await db.setObjectField(`chat:room:${data.roomId}`, 'groups', JSON.stringify(data.groups));
-		}
+		await updateGroups(roomData, data, isAdmin);
 	}
 	if (data.hasOwnProperty('notificationSetting') && isAdmin) {
 		await db.setObjectField(`chat:room:${data.roomId}`, 'notificationSetting', data.notificationSetting);
@@ -166,17 +160,42 @@ chatsAPI.update = async (caller, data) => {
 		roomId: data.roomId,
 	});
 	if (data.hasOwnProperty('name')) {
-		const ioRoom = require('../socket.io').in(`chat_room_${data.roomId}`);
-		if (ioRoom) {
-			ioRoom.emit('event:chats.roomRename', {
-				roomId: data.roomId,
-				newName: validator.escape(String(data.name)),
-				chatWithMessage: loadedRoom.chatWithMessage,
-			});
-		}
+		emitRoomRenameEvent(data, loadedRoom);
 	}
 	return loadedRoom;
 };
+
+function validateData(data) {
+	if (!data || !data.roomId) {
+		throw new Error('[[error:invalid-data]]');
+	}
+}
+
+async function updateRoomName(caller, data) {
+	if (data.hasOwnProperty('name')) {
+		if (!data.name && data.name !== '') {
+			throw new Error('[[error:invalid-data]]');
+		}
+		await messaging.renameRoom(caller.uid, data.roomId, data.name);
+	}
+}
+
+async function updateGroups(roomData, data, isAdmin) {
+	if (roomData.public && isAdmin) {
+		await db.setObjectField(`chat:room:${data.roomId}`, 'groups', JSON.stringify(data.groups));
+	}
+}
+
+function emitRoomRenameEvent(data, loadedRoom) {
+	const ioRoom = require('../socket.io').in(`chat_room_${data.roomId}`);
+	if (ioRoom) {
+		ioRoom.emit('event:chats.roomRename', {
+			roomId: data.roomId,
+			newName: validator.escape(String(data.name)),
+			chatWithMessage: loadedRoom.chatWithMessage,
+		});
+	}
+}
 
 chatsAPI.rename = async (caller, data) => {
 	if (!data || !data.roomId || !data.name) {
