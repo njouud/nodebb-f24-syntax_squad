@@ -122,6 +122,7 @@ module.exports = function (User) {
 		return userData.uid;
 	}
 
+
 	async function storePassword(uid, password) {
 		if (!password) {
 			return;
@@ -160,6 +161,7 @@ module.exports = function (User) {
 	User.isPasswordValid = function (password, minStrength) {
 		minStrength = (minStrength || minStrength === 0) ? minStrength : meta.config.minimumPasswordStrength;
 
+		// Sanity checks: Checks if defined and is string
 		if (!password || !utils.isPasswordValid(password)) {
 			throw new Error('[[error:invalid-password]]');
 		}
@@ -182,6 +184,7 @@ module.exports = function (User) {
 		let numTries = 0;
 		let { username } = userData;
 		while (true) {
+			/* eslint-disable no-await-in-loop */
 			const exists = await meta.userOrGroupExists(username);
 			if (!exists) {
 				return numTries ? username : null;
