@@ -122,6 +122,10 @@ module.exports = function (User) {
 		return userData.uid;
 	}
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> reem-feature/issue-meta-config.js
 	async function storePassword(uid, password) {
 		if (!password) {
 			return;
