@@ -1,4 +1,3 @@
-
 'use strict';
 
 const nconf = require('nconf');
@@ -15,56 +14,22 @@ const Configs = module.exports;
 
 Meta.config = {};
 
-
 // called after data is loaded from db
 function deserialize(config) {
 	const deserialized = {};
 
->>>>>>> reem-feature/issue-meta-config.js
 	Object.keys(config).forEach((key) => {
 		const defaultType = typeof defaults[key];
 		const type = typeof config[key];
 		const number = parseFloat(config[key]);
 
-<<<<<<< HEAD
-		if (defaultType === 'string' && type === 'number') {
-			deserialized[key] = String(config[key]);
-		} else if (defaultType === 'number' && type === 'string') {
-			if (!isNaN(number) && isFinite(config[key])) {
-				deserialized[key] = number;
-			} else {
-				deserialized[key] = defaults[key];
-			}
-		} else if (config[key] === 'true') {
-			deserialized[key] = true;
-		} else if (config[key] === 'false') {
-			deserialized[key] = false;
-		} else if (config[key] === null) {
-			deserialized[key] = defaults[key];
-		} else if (defaultType === 'undefined' && !isNaN(number) && isFinite(config[key])) {
-			deserialized[key] = number;
-		} else if (Array.isArray(defaults[key]) && !Array.isArray(config[key])) {
-			try {
-				deserialized[key] = JSON.parse(config[key] || '[]');
-			} catch (err) {
-				winston.error(err.stack);
-				deserialized[key] = defaults[key];
-			}
-		} else {
-			deserialized[key] = config[key];
-		}
-	});
-	return deserialized;
-}
-
-=======
 		deserialized[key] = handleTypeConversion(defaultType, type, config[key], number, key);
 	});
 
 	return deserialized;
 }
 
-// got this code from ChatGPT
+// Function to handle type conversion during deserialization
 function handleTypeConversion(defaultType, type, value, number, key) {
 	if (defaultType === 'string' && type === 'number') {
 		return String(value);
@@ -113,7 +78,6 @@ function handleArrayConversion(value, key) {
 	}
 }
 
->>>>>>> reem-feature/issue-meta-config.js
 // called before data is saved to db
 function serialize(config) {
 	const serialized = {};
@@ -274,7 +238,6 @@ async function getLogoSize(data) {
 		size = await image.size(path.join(nconf.get('upload_path'), 'system', 'site-logo-x50.png'));
 	} catch (err) {
 		if (err.code === 'ENOENT') {
-			// For whatever reason the x50 logo wasn't generated, gracefully error out
 			winston.warn('[logo] The email-safe logo doesn\'t seem to have been created, please re-upload your site logo.');
 			size = {
 				height: 0,
