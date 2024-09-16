@@ -15,11 +15,6 @@ const Configs = module.exports;
 
 Meta.config = {};
 
-<<<<<<< HEAD
-// called after data is loaded from db
-function deserialize(config) {
-	const deserialized = {};
-=======
 
 // called after data is loaded from db
 function deserialize(config) {
