@@ -1,48 +1,31 @@
 'use strict';
 
-const _ = require('lodash');
-const nconf = require('nconf');
-
-const meta = require('../meta');
-const plugins = require('../plugins');
-const db = require('../database');
-const posts = require('../posts'); 
-
-
 module.exports = function (Topics) {
+	Topics.search = async function (data) {
+		// Extracting the attributes of data object
+		const query = data.query || ''; // The search term
+		const tid = data.tid || 1; // Topic ID to search in
+		const uid = data.uid || 0; // User ID of the searcher
 
-    Topics.search = async function (data) {
+		// Storing the posts associated with a topic
+		const set = `tid:${tid}:posts`;
 
-        // extracting the attributes of data object 
-        const query = data.query || ''; // the search term 
-        const tid = data.tid || 1; // topic id to search in
-        const uid = data.uid || 0; // user id of the searcher 
+		// Getting topic attributes using getTopicData
+		const topicData = await Topics.getTopicData(tid);
 
-        // storing the posts associated with a topic 
-        const set = `tid:${tid}:posts`; 
+		// Using getTopicPosts function in src/topics/posts.js
+		// to retrieve all the posts in the topic (by making range 0 to -1)
+		const postsData = await Topics.getTopicPosts(topicData, set, 0, -1, uid);
 
-        // fetch topic attributes using getTopicData
-        const topicData = await Topics.getTopicData(tid); 
-        
-        // using getTopicPosts function in src/topics/posts.js  
-        // to retrieve all the posts in the topic (by making range 0 to -1) 
-        const postsData = await Topics.getTopicPosts(topicData, set, 0, -1, uid); 
+		// Looping through retrieved postsData array
+		// and inspecting each post object for the search query
+		const filteredPosts = postsData.filter(post => post.content.toLowerCase().includes(query.toLowerCase()));
 
-        // looping through retrieved postsdata array 
-        // and inspecting each post object for the search query 
-        const filteredPosts = postsData.filter(post => 
-            // comparing both in lowercase 
-            post.content.toLowerCase().includes(query.toLowerCase())
-        );
-
-        // returning results object containing the array of the filtered posts 
-        // and number of filtered posts found 
-        const result = {
-            matchCount: filteredPosts.length,
-            posts: filteredPosts // array of arrays of post objects 
-        };
-
-        return result; 
-
-    };
+		// Returning results object containing the array of filtered posts
+		// and number of filtered posts found
+		return {
+			matchCount: filteredPosts.length,
+			posts: filteredPosts, // Array of post objects
+		};
+	};
 };
