@@ -1,7 +1,7 @@
 'use strict';
 
 module.exports = function (Topics) {
-	Topics.mysearch = async function (data) {
+	Topics.postSearch = async function (data) {
 		console.log('in topic search');
 		console.log('data:', data);
 
