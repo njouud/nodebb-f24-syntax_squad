@@ -1,31 +1,49 @@
 'use strict';
 
 module.exports = function (Topics) {
-	Topics.search = async function (data) {
-		// Extracting the attributes of data object
-		const query = data.query || ''; // The search term
-		const tid = data.tid || 1; // Topic ID to search in
-		const uid = data.uid || 0; // User ID of the searcher
+	Topics.mysearch = async function (data) {
+		console.log('in topic search');
+		console.log('data:', data);
 
-		// Storing the posts associated with a topic
+		// extracting the attributes of the data object
+		const query = data.query || ''; // the search term
+		const tid = data.tid || 1; // topic id to search in
+		const page = data.page || 1; // pagination: current page
+		const uid = data.uid || 0; // user id of the searcher
+		const paginate = data.hasOwnProperty('paginate') ? data.paginate : true;
+
+		const startTime = process.hrtime();
+
+		// storing the posts associated with a topic
 		const set = `tid:${tid}:posts`;
-
-		// Getting topic attributes using getTopicData
+		// getting topic attributes using getTopicData
 		const topicData = await Topics.getTopicData(tid);
-
-		// Using getTopicPosts function in src/topics/posts.js
+		// using getTopicPosts function in src/topics/posts.js
 		// to retrieve all the posts in the topic (by making range 0 to -1)
 		const postsData = await Topics.getTopicPosts(topicData, set, 0, -1, uid);
 
-		// Looping through retrieved postsData array
+		// filtering posts based on query
+		// looping through retrieved postsData array
 		// and inspecting each post object for the search query
-		const filteredPosts = postsData.filter(post => post.content.toLowerCase().includes(query.toLowerCase()));
+		let filteredPosts = postsData.filter(post => post.content.toLowerCase().includes(query.toLowerCase()));
 
-		// Returning results object containing the array of filtered posts
-		// and number of filtered posts found
-		return {
+		const searchResult = {
 			matchCount: filteredPosts.length,
-			posts: filteredPosts, // Array of post objects
 		};
+
+		if (paginate) {
+			const resultsPerPage = data.resultsPerPage || 10; // default results per page
+			const start = Math.max(0, page - 1) * resultsPerPage;
+			const stop = start + resultsPerPage;
+			searchResult.pageCount = Math.ceil(filteredPosts.length / resultsPerPage);
+			filteredPosts = filteredPosts.slice(start, stop);
+		}
+
+		// timing the search process
+		searchResult.timing = (process.hrtime(startTime)[1] / 1e6).toFixed(2); // ms timing
+
+		// returning filtered posts and match count
+		searchResult.posts = filteredPosts;
+		return searchResult;
 	};
 };
